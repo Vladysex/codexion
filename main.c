@@ -6,7 +6,7 @@
 /*   By: vlprysia <vlprysia@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/04/14 17:39:09 by vlprysia          #+#    #+#             */
-/*   Updated: 2026/04/20 21:04:29 by vlprysia         ###   ########.fr       */
+/*   Updated: 2026/04/25 16:53:29 by vlprysia         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -57,12 +57,6 @@ typedef struct data_holder {
 	t_dongle *dongles;	
 } dh;
 
-t_coder *create_coders(int num_of_coders)
-{
-	t_coder *coders = malloc(sizeof(t_coder) * num_of_coders);
-	if (!coders)
-		return NULL;
-}
 
 int init_dongles(dh *dath){
 	int i = 0; 
@@ -92,18 +86,19 @@ int init_coders(dh *dath)
 {
 	int i = 0;
 	dath->coders = malloc(sizeof(t_coder) * dath->number_of_coder);
-	if (!dath->dongles)
+	if (!dath->coders)
 		return(free(dath->coders), 0);
 
 	while (i < dath->number_of_coder)
 	{
 		dath->coders[i].id = i+1;
 		dath->coders[i].compile_count = 0;
-		dath->coders[i].is_burned_out;
+		dath->coders[i].is_burned_out = 0;
 		dath->coders[i].last_compile_start = 0;
 		pthread_mutex_init(&dath->coders[i].mutex, NULL);
 		dath->coders[i].left = &dath->dongles[i];
 		dath->coders[i].right = &dath->dongles[(i+1) % dath->number_of_coder];
+		dath->coders[i].dh = dath;
 		i++;
 	}
 	return 1;
@@ -189,4 +184,25 @@ int main(int argc, char* argv[])
 	
 	return 0;
 
+}
+void *coder_routine(void *arg)
+{
+	t_coder *coder = (t_coder *)arg;
+
+	while(coder->dh->is_running)
+	{
+		if(coder->left->is_active && coder->compile_count < coder->dh->number_of_compiles_required)
+		{
+			printf("%d has taken a dongle", coder->id);
+		}
+		if(coder->right->is_active && coder->compile_count < coder->dh->number_of_compiles_required)
+		{
+			printf("%d has taken a dongle", coder->id);
+		}
+		if(coder->right->is_active && coder->left->is_active)
+		{
+			coder->compile_count++;
+			printf("%d is compiling", coder->id);
+		}
+	}
 }
